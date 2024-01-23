@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
+#include <math.h>
 
 #include "Morpion.h"
 
@@ -142,6 +144,18 @@ int victoire_aux(int g[TAILLE*TAILLE]){
     return victoire;
 }
 
+bool estPremier(int n){
+    for (int i = 2 ; i < sqrt(n) ; i++){
+        if (n%i == 0) return false;
+    }
+    return true;
+}
+
+int premierPremier(int n){
+    while(!estPremier(n)) n++;
+    return n;
+}
+
 void jouerOrdi(Grille_t* grille){
     // on commence par construire le premier noeud de l'arbre
     noeud_t* racine = malloc(sizeof(noeud_t));
@@ -149,6 +163,9 @@ void jouerOrdi(Grille_t* grille){
     racine->nbFils = 0;
     racine->fils = malloc(TAILLE*TAILLE*sizeof(noeud_t));
     racine->max = true;
+
+    // on commence par construire la table de hachage
+    table_t* table = initTable(premierPremier(TAILLE*TAILLE*TAILLE));
 
     // on construit l'arbre
     construireArbre(racine, false, 0);
@@ -169,30 +186,25 @@ void jouerOrdi(Grille_t* grille){
 
     // on libère la mémoire
     detruireArbre(racine);
+    supprimerTable(table);
 }
 
 void construireArbre(noeud_t* racine, bool joueur, int profondeur){
-    int victoire = victoire_aux(racine->etatGrille);
-    if (victoire == 0){
-        for (int i = 0 ; i < TAILLE*TAILLE ; i++){
-            if (racine->etatGrille[i] == 0){// on crée un fils
-                noeud_t* fils = malloc(sizeof(noeud_t));
-                if (racine->max) fils->max = false;
-                else fils->max = true;
-                for (int j = 0 ; j < TAILLE*TAILLE ; j++) fils->etatGrille[j] = racine->etatGrille[j];
-                fils->etatGrille[i] = !joueur + 1;
-                fils->nbFils = 0;
-                fils->fils = malloc((TAILLE*TAILLE - profondeur)*sizeof(noeud_t));
-
-                // on ajoute le fils à la racine
-                racine->nbFils++;
-                racine->fils[racine->nbFils - 1] = fils;
-
-                // on vérifie si le fils est une feuille
-                if (victoire_aux(fils->etatGrille) == 0) construireArbre(fils, !joueur, profondeur + 1);
-                else if (victoire_aux(fils->etatGrille) == 1) fils->valeur = -1;
-                else if (victoire_aux(fils->etatGrille) == 2) fils->valeur = 1;
-                else fils->valeur = 0;
+    int victoire = victoire_aux(racine->etatGrille); // on vérifie si la partie est finie
+    if (victoire == 0){ // si la partie n'est pas finie
+        for (int i = 0 ; i < TAILLE*TAILLE ; i++){ // on parcourt les cases de la grille
+            if (racine->etatGrille[i] == 0){ // si la case est vide
+                noeud_t* fils = malloc(sizeof(noeud_t)); // on crée un fils
+                fils->max = !(racine->max); // on alterne les noeuds max et min
+                for (int j = 0 ; j < TAILLE*TAILLE ; j++) fils->etatGrille[j] = racine->etatGrille[j]; // on copie l'état de la grille
+                fils->etatGrille[i] = !joueur + 1; // on joue le coup
+                fils->nbFils = 0; // on initialise le nombre de fils à 0
+                fils->fils = malloc((TAILLE*TAILLE - profondeur)*sizeof(noeud_t)); // on alloue la mémoire pour les fils. 
+                                                                                   // Il y a au maximum TAILLE*TAILLE - profondeur fils car 
+                                                                                   // on ne peut pas jouer dans une case déjà occupée
+                racine->nbFils++; // on incrémente le nombre de fils du noeud parent
+                racine->fils[racine->nbFils - 1] = fils; // on ajoute le fils au noeud parent
+                construireArbre(fils, !joueur, profondeur + 1); // on construit le fils
             }
         }
     } else if (victoire == 1){

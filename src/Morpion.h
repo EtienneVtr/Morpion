@@ -52,5 +52,7 @@ extern void ajouterElement(table_t* table, char* cle, noeud_t* noeud);
 extern void redimensionnerTable(table_t* table, int nouvelleTaille);
 extern bool existe(table_t* table, char* cle);
 extern void supprimerTable(table_t* table);
+extern bool estPremier(int n);
+extern int premierPremier(int n);
 
 #endif
