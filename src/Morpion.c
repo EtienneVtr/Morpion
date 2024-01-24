@@ -161,7 +161,7 @@ void jouerOrdi(Grille_t* grille){
     noeud_t* racine = malloc(sizeof(noeud_t));
     for (int i = 0 ; i < TAILLE*TAILLE ; i++) racine->etatGrille[i] = grille->grille[i];
     racine->nbFils = 0;
-    racine->fils = malloc(TAILLE*TAILLE*sizeof(noeud_t));
+    racine->fils = malloc(TAILLE*TAILLE*sizeof(noeud_t*));
     racine->max = true;
 
     // on commence par construire la table de hachage
@@ -185,7 +185,6 @@ void jouerOrdi(Grille_t* grille){
     for (int i = 0 ; i < TAILLE*TAILLE ; i++) grille->grille[i] = racine->fils[indiceMax]->etatGrille[i];
 
     // on libère la mémoire
-    //detruireArbre(racine);
     supprimerTable(table);
 }
 
@@ -209,14 +208,15 @@ void construireArbre(noeud_t* racine, bool joueur, int profondeur, table_t* tabl
                     for (int j = 0 ; j < TAILLE*TAILLE ; j++) fils->etatGrille[j] = racine->etatGrille[j]; // on copie l'état de la grille
                     fils->etatGrille[i] = !joueur + 1; // on joue le coup
                     fils->nbFils = 0; // on initialise le nombre de fils à 0
-                    fils->fils = malloc((TAILLE*TAILLE - profondeur)*sizeof(noeud_t)); // on alloue la mémoire pour les fils. 
-                                                                                       // Il y a au maximum TAILLE*TAILLE - profondeur fils car 
-                                                                                       // on ne peut pas jouer dans une case déjà occupée
+                    fils->fils = malloc((TAILLE*TAILLE - profondeur)*sizeof(noeud_t*)); // on alloue la mémoire pour les fils. 
+                                                                                        // Il y a au maximum TAILLE*TAILLE - profondeur fils car 
+                                                                                        // on ne peut pas jouer dans une case déjà occupée
                     racine->nbFils++; // on incrémente le nombre de fils du noeud parent
                     racine->fils[racine->nbFils - 1] = fils; // on ajoute le fils au noeud parent
                     construireArbre(fils, !joueur, profondeur + 1, table); // on construit le fils
                 }
             }
+            //evaluerArbre(racine); // on met à jour les valeurs des noeuds
         } else if (victoire == 1){
             racine->valeur = -1;
         } else if (victoire == 2){
@@ -225,7 +225,6 @@ void construireArbre(noeud_t* racine, bool joueur, int profondeur, table_t* tabl
             racine->valeur = 0;
         }
     }
-
 }
 
 bool estFeuille(noeud_t* noeud){
@@ -370,6 +369,8 @@ void supprimerTable(table_t* table) {
         while (element != NULL) {
             hache_t* suivant = element->suivant;
             free(element->cle);
+            free(element->noeud->fils);
+            free(element->noeud);
             free(element);
             element = suivant;
         }

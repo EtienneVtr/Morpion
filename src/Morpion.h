@@ -41,7 +41,6 @@ extern bool jouer(Grille_t* grille, int i, int j, bool joueur);
 extern int victoire(Grille_t* grille);
 extern void jouerOrdi(Grille_t* grille);
 extern void construireArbre(noeud_t* noeud, bool joueur, int profondeur, table_t* table);
-extern void detruireArbre(noeud_t* noeud);
 extern bool estFeuille(noeud_t* noeud);
 extern void evaluerArbre(noeud_t* racine);
 extern void afficherArbre(noeud_t* racine, int profondeur);
