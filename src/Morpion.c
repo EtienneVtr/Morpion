@@ -6,6 +6,8 @@
 
 #include "Morpion.h"
 
+int nbNoeuds = 0;
+
 Grille_t* initGrille(){
     Grille_t* grille = malloc(sizeof(Grille_t));
     for (int i = 0 ; i < TAILLE*TAILLE ; i++) grille->grille[i] = 0;
@@ -168,7 +170,8 @@ void jouerOrdi(Grille_t* grille){
     table_t* table = initTable(premierPremier(TAILLE*TAILLE*TAILLE));
 
     // on construit l'arbre
-    construireArbre(racine, false, 0);
+    nbNoeuds = 0;
+    construireArbre(racine, false, 0, table);
 
     // on met ensuite à jour les valeurs des noeuds
     evaluerArbre(racine);
@@ -185,45 +188,50 @@ void jouerOrdi(Grille_t* grille){
     for (int i = 0 ; i < TAILLE*TAILLE ; i++) grille->grille[i] = racine->fils[indiceMax]->etatGrille[i];
 
     // on libère la mémoire
-    detruireArbre(racine);
+    //detruireArbre(racine);
     supprimerTable(table);
 }
 
-void construireArbre(noeud_t* racine, bool joueur, int profondeur){
-    int victoire = victoire_aux(racine->etatGrille); // on vérifie si la partie est finie
-    if (victoire == 0){ // si la partie n'est pas finie
-        for (int i = 0 ; i < TAILLE*TAILLE ; i++){ // on parcourt les cases de la grille
-            if (racine->etatGrille[i] == 0){ // si la case est vide
-                noeud_t* fils = malloc(sizeof(noeud_t)); // on crée un fils
-                fils->max = !(racine->max); // on alterne les noeuds max et min
-                for (int j = 0 ; j < TAILLE*TAILLE ; j++) fils->etatGrille[j] = racine->etatGrille[j]; // on copie l'état de la grille
-                fils->etatGrille[i] = !joueur + 1; // on joue le coup
-                fils->nbFils = 0; // on initialise le nombre de fils à 0
-                fils->fils = malloc((TAILLE*TAILLE - profondeur)*sizeof(noeud_t)); // on alloue la mémoire pour les fils. 
-                                                                                   // Il y a au maximum TAILLE*TAILLE - profondeur fils car 
-                                                                                   // on ne peut pas jouer dans une case déjà occupée
-                racine->nbFils++; // on incrémente le nombre de fils du noeud parent
-                racine->fils[racine->nbFils - 1] = fils; // on ajoute le fils au noeud parent
-                construireArbre(fils, !joueur, profondeur + 1); // on construit le fils
-            }
-        }
-    } else if (victoire == 1){
-        racine->valeur = -1;
-    } else if (victoire == 2){
-        racine->valeur = 1;
-    } else {
-        racine->valeur = 0;
-    }
-}
+void construireArbre(noeud_t* racine, bool joueur, int profondeur, table_t* table){
+    printf("Nombre de noeuds : %d\r", nbNoeuds++);
+    fflush(stdout);
+    
+    char* cle = creerCle(racine->etatGrille);
 
-void detruireArbre(noeud_t* noeud){
-    if (noeud->nbFils > 0){
-        for (int i = 0 ; i < noeud->nbFils ; i++){
-            detruireArbre(noeud->fils[i]);
+    if (existe(table, cle)){
+        noeud_t* noeud = trouve(table, cle);
+        racine->valeur = noeud->valeur;
+        racine->nbFils = noeud->nbFils;
+        racine->fils = noeud->fils;
+        free(cle);
+    } else {
+        ajouterElement(table, cle, racine);
+        int victoire = victoire_aux(racine->etatGrille); // on vérifie si la partie est finie
+        if (victoire == 0){ // si la partie n'est pas finie
+            for (int i = 0 ; i < TAILLE*TAILLE ; i++){ // on parcourt les cases de la grille
+                if (racine->etatGrille[i] == 0){ // si la case est vide
+                    noeud_t* fils = malloc(sizeof(noeud_t)); // on crée un fils
+                    fils->max = !(racine->max); // on alterne les noeuds max et min
+                    for (int j = 0 ; j < TAILLE*TAILLE ; j++) fils->etatGrille[j] = racine->etatGrille[j]; // on copie l'état de la grille
+                    fils->etatGrille[i] = !joueur + 1; // on joue le coup
+                    fils->nbFils = 0; // on initialise le nombre de fils à 0
+                    fils->fils = malloc((TAILLE*TAILLE - profondeur)*sizeof(noeud_t)); // on alloue la mémoire pour les fils. 
+                                                                                       // Il y a au maximum TAILLE*TAILLE - profondeur fils car 
+                                                                                       // on ne peut pas jouer dans une case déjà occupée
+                    racine->nbFils++; // on incrémente le nombre de fils du noeud parent
+                    racine->fils[racine->nbFils - 1] = fils; // on ajoute le fils au noeud parent
+                    construireArbre(fils, !joueur, profondeur + 1, table); // on construit le fils
+                }
+            }
+        } else if (victoire == 1){
+            racine->valeur = -1;
+        } else if (victoire == 2){
+            racine->valeur = 1;
+        } else {
+            racine->valeur = 0;
         }
     }
-    free(noeud->fils);
-    free(noeud);
+
 }
 
 bool estFeuille(noeud_t* noeud){
@@ -294,7 +302,7 @@ table_t* initTable(int taille) {
 }
 
 void ajouterElement(table_t* table, char* cle, noeud_t* noeud) {
-    if ( (float) table->nbElements / table->taille > 0.7 ) {
+    if ( (float) table->nbElements / table->taille < 0.7 ) {
         int index = hash(cle, table->taille);
         hache_t* nouvelElement = malloc(sizeof(hache_t));
         nouvelElement->cle = strdup(cle); // Duplique la clé
@@ -349,6 +357,19 @@ bool existe(table_t* table, char* cle) {
     return false; // Clé non trouvée
 }
 
+noeud_t* trouve(table_t* table, char* cle) {
+    int index = hash(cle, table->taille);
+    hache_t* element = table->elements[index];
+
+    while (element != NULL) {
+        if (strcmp(element->cle, cle) == 0) {
+            return element->noeud; // Clé trouvée
+        }
+        element = element->suivant;
+    }
+    return NULL; // Clé non trouvée
+}
+
 void supprimerTable(table_t* table) {
     for (int i = 0; i < table->taille; i++) {
         hache_t* element = table->elements[i];
@@ -361,4 +382,9 @@ void supprimerTable(table_t* table) {
     }
     free(table->elements);
     free(table);
+}
+
+bool grillesEgales(int grille1[TAILLE*TAILLE], int grille2[TAILLE*TAILLE]){
+    for (int i = 0 ; i < TAILLE*TAILLE ; i++) if (grille1[i] != grille2[i]) return true;
+    return false;
 }

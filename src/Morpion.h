@@ -40,7 +40,7 @@ extern void affichageGrille(Grille_t* grille);
 extern bool jouer(Grille_t* grille, int i, int j, bool joueur);
 extern int victoire(Grille_t* grille);
 extern void jouerOrdi(Grille_t* grille);
-extern void construireArbre(noeud_t* noeud, bool joueur, int profondeur);
+extern void construireArbre(noeud_t* noeud, bool joueur, int profondeur, table_t* table);
 extern void detruireArbre(noeud_t* noeud);
 extern bool estFeuille(noeud_t* noeud);
 extern void evaluerArbre(noeud_t* racine);
@@ -51,8 +51,10 @@ extern table_t* initTable(int taille);
 extern void ajouterElement(table_t* table, char* cle, noeud_t* noeud);
 extern void redimensionnerTable(table_t* table, int nouvelleTaille);
 extern bool existe(table_t* table, char* cle);
+extern noeud_t* trouve(table_t* table, char* cle);
 extern void supprimerTable(table_t* table);
 extern bool estPremier(int n);
 extern int premierPremier(int n);
+extern bool grillesEgales(int grille1[TAILLE*TAILLE], int grille2[TAILLE*TAILLE]);
 
 #endif
