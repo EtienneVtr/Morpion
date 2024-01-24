@@ -5,7 +5,7 @@
 
 ## Description
 
-Application d'un algorithme de min-max sur un jeu de Morpion. Pas d'interface graphique, celui-ci se fait par ligne de commande.
+Application d'un algorithme de min-max sur un jeu de Morpion. Pas d'interface graphique, celui-ci se fait par ligne de commande. L'algorithme est optimisé grâce à l'utilisation d'une table de hashage pour stocker les coups déjà joués. Cependant, l'algorithme n'est pas assez performant pour les parties de taille 4x4 et plus : le processus s'arrête.
 
 ## Utilisation
 

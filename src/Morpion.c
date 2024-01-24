@@ -6,8 +6,6 @@
 
 #include "Morpion.h"
 
-int nbNoeuds = 0;
-
 Grille_t* initGrille(){
     Grille_t* grille = malloc(sizeof(Grille_t));
     for (int i = 0 ; i < TAILLE*TAILLE ; i++) grille->grille[i] = 0;
@@ -170,7 +168,6 @@ void jouerOrdi(Grille_t* grille){
     table_t* table = initTable(premierPremier(TAILLE*TAILLE*TAILLE));
 
     // on construit l'arbre
-    nbNoeuds = 0;
     construireArbre(racine, false, 0, table);
 
     // on met ensuite à jour les valeurs des noeuds
@@ -192,10 +189,7 @@ void jouerOrdi(Grille_t* grille){
     supprimerTable(table);
 }
 
-void construireArbre(noeud_t* racine, bool joueur, int profondeur, table_t* table){
-    printf("Nombre de noeuds : %d\r", nbNoeuds++);
-    fflush(stdout);
-    
+void construireArbre(noeud_t* racine, bool joueur, int profondeur, table_t* table){    
     char* cle = creerCle(racine->etatGrille);
 
     if (existe(table, cle)){
