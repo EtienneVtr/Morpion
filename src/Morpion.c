@@ -167,8 +167,12 @@ void jouerOrdi(Grille_t* grille){
     // on commence par construire la table de hachage
     table_t* table = initTable(premierPremier(TAILLE*TAILLE*TAILLE));
 
+    listeAux_t* list = malloc(sizeof(listeAux_t));
+    list->noeuds = malloc(pow(100,TAILLE)*sizeof(noeud_t*));
+    list->nbElements = 0;
+
     // on construit l'arbre
-    construireArbre(racine, false, 0, table);
+    construireArbre(racine, false, 0, table, list);
 
     // on met ensuite à jour les valeurs des noeuds
     evaluerArbre(racine);
@@ -184,19 +188,25 @@ void jouerOrdi(Grille_t* grille){
     }
     for (int i = 0 ; i < TAILLE*TAILLE ; i++) grille->grille[i] = racine->fils[indiceMax]->etatGrille[i];
 
+    printf("Nombre de noeuds créés mais absents de la table de hachage : %d\n", list->nbElements);
+    printf("Nombre de noeuds créés présents dans la table de hachage : %d\n", table->nbElements);
+
     // on libère la mémoire
     supprimerTable(table);
+    freeListNoeudPasDansTable(list);
 }
 
-void construireArbre(noeud_t* racine, bool joueur, int profondeur, table_t* table){    
+void construireArbre(noeud_t* racine, bool joueur, int profondeur, table_t* table, listeAux_t* list){    
     char* cle = creerCle(racine->etatGrille);
 
     if (existe(table, cle)){
         noeud_t* noeud = trouve(table, cle);
         racine->valeur = noeud->valeur;
         racine->nbFils = noeud->nbFils;
+        free(racine->fils); // on libère la mémoire allouée avant de remplacer par les fils déjà existants
         racine->fils = noeud->fils;
         free(cle);
+        list->noeuds[list->nbElements++] = racine;
     } else {
         ajouterElement(table, cle, racine);
         int victoire = victoire_aux(racine->etatGrille); // on vérifie si la partie est finie
@@ -211,12 +221,10 @@ void construireArbre(noeud_t* racine, bool joueur, int profondeur, table_t* tabl
                     fils->fils = malloc((TAILLE*TAILLE - profondeur)*sizeof(noeud_t*)); // on alloue la mémoire pour les fils. 
                                                                                         // Il y a au maximum TAILLE*TAILLE - profondeur fils car 
                                                                                         // on ne peut pas jouer dans une case déjà occupée
-                    racine->nbFils++; // on incrémente le nombre de fils du noeud parent
-                    racine->fils[racine->nbFils - 1] = fils; // on ajoute le fils au noeud parent
-                    construireArbre(fils, !joueur, profondeur + 1, table); // on construit le fils
+                    racine->fils[racine->nbFils++] = fils; // on ajoute le fils au noeud parent en incrémentant le nombre de fils
+                    construireArbre(fils, !joueur, profondeur + 1, table, list); // on construit le fils
                 }
             }
-            //evaluerArbre(racine); // on met à jour les valeurs des noeuds
         } else if (victoire == 1){
             racine->valeur = -1;
         } else if (victoire == 2){
@@ -382,4 +390,14 @@ void supprimerTable(table_t* table) {
 bool grillesEgales(int grille1[TAILLE*TAILLE], int grille2[TAILLE*TAILLE]){
     for (int i = 0 ; i < TAILLE*TAILLE ; i++) if (grille1[i] != grille2[i]) return true;
     return false;
+}
+
+void freeListNoeudPasDansTable(listeAux_t* listNoeudPasDansTable){
+    for (int i = 0 ; i < listNoeudPasDansTable->nbElements ; i++) {
+        if (listNoeudPasDansTable->noeuds[i] != NULL) {
+            free(listNoeudPasDansTable->noeuds[i]);
+        }
+    }
+    free(listNoeudPasDansTable->noeuds);
+    free(listNoeudPasDansTable);
 }
