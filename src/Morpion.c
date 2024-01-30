@@ -6,6 +6,7 @@
 
 #include "Morpion.h"
 
+// Fonction qui initialise une grille
 Grille_t* initGrille(){
     Grille_t* grille = malloc(sizeof(Grille_t));
     for (int i = 0 ; i < TAILLE*TAILLE ; i++) grille->grille[i] = 0;
@@ -17,6 +18,7 @@ Grille_t* initGrille(){
     return grille;
 }
 
+// Fonction qui affiche la grille
 void affichageGrille(Grille_t* grille){
     char symboles[3];
     symboles[0] = '.';
@@ -39,6 +41,7 @@ void affichageGrille(Grille_t* grille){
     }
 }
 
+// Fonction qui permet de jouer un coup
 bool jouer(Grille_t* grille, int i, int j, bool joueur){
     if (i < 0 || i > TAILLE - 1 || j < 0 || j > TAILLE - 1){
         printf("Coordonnées invalides !\n");
@@ -54,6 +57,7 @@ bool jouer(Grille_t* grille, int i, int j, bool joueur){
     }
 }
 
+// Fonctions qui testent l'état de la partie (en cours, victoire, défaite, égalité)
 int victoire(Grille_t* grille){
     int victoire = 0;
     int g[TAILLE*TAILLE];
@@ -144,6 +148,7 @@ int victoire_aux(int g[TAILLE*TAILLE]){
     return victoire;
 }
 
+// Fonction qui teste si un entier est premier
 bool estPremier(int n){
     for (int i = 2 ; i < sqrt(n) ; i++){
         if (n%i == 0) return false;
@@ -151,11 +156,13 @@ bool estPremier(int n){
     return true;
 }
 
+// Fonction qui renvoie le premier nombre premier supérieur ou égal à n
 int premierPremier(int n){
     while(!estPremier(n)) n++;
     return n;
 }
 
+// Fonction qui permet de jouer contre l'ordinateur
 void jouerOrdi(Grille_t* grille){
     // on commence par construire le premier noeud de l'arbre
     noeud_t* racine = malloc(sizeof(noeud_t));
@@ -167,6 +174,7 @@ void jouerOrdi(Grille_t* grille){
     // on commence par construire la table de hachage
     table_t* table = initTable(premierPremier(TAILLE*TAILLE*TAILLE));
 
+    // on crée une liste auxiliaire pour stocker les noeuds qui ne sont pas dans la table de hachage
     listeAux_t* list = malloc(sizeof(listeAux_t));
     list->noeuds = malloc(pow(100,TAILLE)*sizeof(noeud_t*));
     list->nbElements = 0;
@@ -196,19 +204,20 @@ void jouerOrdi(Grille_t* grille){
     freeListNoeudPasDansTable(list);
 }
 
+// Fonction qui construit l'arbre des coups possibles
 void construireArbre(noeud_t* racine, bool joueur, int profondeur, table_t* table, listeAux_t* list){    
     char* cle = creerCle(racine->etatGrille);
 
-    if (existe(table, cle)){
-        noeud_t* noeud = trouve(table, cle);
-        racine->valeur = noeud->valeur;
+    if (existe(table, cle)){ // si le noeud existe déjà dans la table de hachage
+        noeud_t* noeud = trouve(table, cle);// *******************
+        racine->valeur = noeud->valeur; // on récupère les données
         racine->nbFils = noeud->nbFils;
         free(racine->fils); // on libère la mémoire allouée avant de remplacer par les fils déjà existants
-        racine->fils = noeud->fils;
+        racine->fils = noeud->fils; // ***************************
         free(cle);
-        list->noeuds[list->nbElements++] = racine;
+        list->noeuds[list->nbElements++] = racine; // on ajoute le noeud à la liste des noeuds qui ne sont pas dans la table de hachage
     } else {
-        ajouterElement(table, cle, racine);
+        ajouterElement(table, cle, racine); // on ajoute le noeud à la table de hachage
         int victoire = victoire_aux(racine->etatGrille); // on vérifie si la partie est finie
         if (victoire == 0){ // si la partie n'est pas finie
             for (int i = 0 ; i < TAILLE*TAILLE ; i++){ // on parcourt les cases de la grille
@@ -235,31 +244,34 @@ void construireArbre(noeud_t* racine, bool joueur, int profondeur, table_t* tabl
     }
 }
 
+// Fonction qui teste si un noeud est une feuille
 bool estFeuille(noeud_t* noeud){
     return noeud->nbFils == 0;
 }
 
+// Fonction qui met à jour les valeurs des noeuds
 void evaluerArbre(noeud_t* racine){
-    if (!estFeuille(racine)) {
-        for (int i = 0 ; i < racine->nbFils ; i++){
-            evaluerArbre(racine->fils[i]);
-        }
+    if (!estFeuille(racine)) {                      // *******************************//
+        for (int i = 0 ; i < racine->nbFils ; i++){ // parcours en largeur de l'arbre //
+            evaluerArbre(racine->fils[i]);          //                                //
+        }                                           // *******************************//
         if (racine->max){
             int max = -999;
             for (int i = 0 ; i < racine->nbFils ; i++){
-                if (racine->fils[i]->valeur > max) max = racine->fils[i]->valeur;
+                if (racine->fils[i]->valeur > max) max = racine->fils[i]->valeur; // on fait remonter la valeur max
             }
             racine->valeur = max;
         } else {
             int min = 999;
             for (int i = 0 ; i < racine->nbFils ; i++){
-                if (racine->fils[i]->valeur < min) min = racine->fils[i]->valeur;
+                if (racine->fils[i]->valeur < min) min = racine->fils[i]->valeur; // on fait remonter la valeur min
             }
             racine->valeur = min;
         }
     }
 }
 
+// Fonction qui affiche l'arbre
 void afficherArbre(noeud_t* racine, int profondeur){
     if (!estFeuille(racine)){
         for (int i = 0 ; i < racine->nbFils ; i++){
@@ -271,6 +283,7 @@ void afficherArbre(noeud_t* racine, int profondeur){
     printf("\n");
 }
 
+// Fonction qui crée une clé à partir d'une grille
 char* creerCle(int grille[TAILLE*TAILLE]){
     char* str = malloc((TAILLE*TAILLE + 1)*sizeof(char));
     for (int i = 0 ; i < TAILLE*TAILLE ; i++){
@@ -280,6 +293,7 @@ char* creerCle(int grille[TAILLE*TAILLE]){
     return str;
 }
 
+// Fonction qui calcule le hash d'une clé (algorithme de djb2)
 unsigned int hash(char* cle, int tailleTable) {
     unsigned long hash = 5381;
     int c;
@@ -289,6 +303,7 @@ unsigned int hash(char* cle, int tailleTable) {
     return hash % tailleTable;
 }
 
+// Fonction qui initialise une table de hachage
 table_t* initTable(int taille) {
     table_t* table = malloc(sizeof(table_t));
     table->taille = taille;
@@ -302,6 +317,7 @@ table_t* initTable(int taille) {
     return table;
 }
 
+// Fonction qui ajoute un élément à la table de hachage
 void ajouterElement(table_t* table, char* cle, noeud_t* noeud) {
     if ( (float) table->nbElements / table->taille < 0.7 ) {
         int index = hash(cle, table->taille);
@@ -320,6 +336,7 @@ void ajouterElement(table_t* table, char* cle, noeud_t* noeud) {
     }
 }
 
+// Fonction qui redimensionne la table de hachage
 void redimensionnerTable(table_t* table, int nouvelleTaille) {
     hache_t** elements = table->elements;
     int taille = table->taille;
@@ -345,6 +362,7 @@ void redimensionnerTable(table_t* table, int nouvelleTaille) {
     free(elements);
 }
 
+// Fonction qui teste si une clé existe dans la table de hachage
 bool existe(table_t* table, char* cle) {
     int index = hash(cle, table->taille);
     hache_t* element = table->elements[index];
@@ -358,6 +376,7 @@ bool existe(table_t* table, char* cle) {
     return false; // Clé non trouvée
 }
 
+// Fonction qui trouve un noeud dans la table de hachage
 noeud_t* trouve(table_t* table, char* cle) {
     int index = hash(cle, table->taille);
     hache_t* element = table->elements[index];
@@ -371,6 +390,7 @@ noeud_t* trouve(table_t* table, char* cle) {
     return NULL; // Clé non trouvée
 }
 
+// Fonction qui supprime une table de hachage
 void supprimerTable(table_t* table) {
     for (int i = 0; i < table->taille; i++) {
         hache_t* element = table->elements[i];
@@ -387,11 +407,13 @@ void supprimerTable(table_t* table) {
     free(table);
 }
 
+// Fonction qui teste si deux grilles sont égales
 bool grillesEgales(int grille1[TAILLE*TAILLE], int grille2[TAILLE*TAILLE]){
     for (int i = 0 ; i < TAILLE*TAILLE ; i++) if (grille1[i] != grille2[i]) return true;
     return false;
 }
 
+// Fonction qui libère la mémoire allouée à une liste de noeuds qui ne sont pas dans la table de hachage
 void freeListNoeudPasDansTable(listeAux_t* listNoeudPasDansTable){
     for (int i = 0 ; i < listNoeudPasDansTable->nbElements ; i++) {
         if (listNoeudPasDansTable->noeuds[i] != NULL) {
