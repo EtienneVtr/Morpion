@@ -1,7 +1,7 @@
 #ifndef __MORPION_H__
 #define __MORPION_H__
 
-#define TAILLE 4
+#define TAILLE 3
 
 typedef struct {
     int grille[TAILLE*TAILLE];
@@ -45,7 +45,7 @@ extern void affichageGrille(Grille_t* grille);
 extern bool jouer(Grille_t* grille, int i, int j, bool joueur);
 extern int victoire(Grille_t* grille);
 extern void jouerOrdi(Grille_t* grille);
-extern void construireArbre(noeud_t* noeud, bool joueur, int profondeur, table_t* table, listeAux_t* list);
+extern void construireArbre(noeud_t* noeud, bool joueur, int profondeur, table_t* table, listeAux_t* list, int alpha, int beta);
 extern bool estFeuille(noeud_t* noeud);
 extern void evaluerArbre(noeud_t* racine);
 extern void afficherArbre(noeud_t* racine, int profondeur);

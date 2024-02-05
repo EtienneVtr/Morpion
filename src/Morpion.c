@@ -180,10 +180,7 @@ void jouerOrdi(Grille_t* grille){
     list->nbElements = 0;
 
     // on construit l'arbre
-    construireArbre(racine, false, 0, table, list);
-
-    // on met ensuite à jour les valeurs des noeuds
-    evaluerArbre(racine);
+    construireArbre(racine, false, 0, table, list, -999, 999);
 
     // on choisit le meilleur coup
     int max = -2;
@@ -196,8 +193,8 @@ void jouerOrdi(Grille_t* grille){
     }
     for (int i = 0 ; i < TAILLE*TAILLE ; i++) grille->grille[i] = racine->fils[indiceMax]->etatGrille[i];
 
-    printf("Nombre de noeuds créés mais absents de la table de hachage : %d\n", list->nbElements);
-    printf("Nombre de noeuds créés présents dans la table de hachage : %d\n", table->nbElements);
+    // printf("Nombre de noeuds créés mais absents de la table de hachage : %d\n", list->nbElements);
+    // printf("Nombre de noeuds créés présents dans la table de hachage : %d\n", table->nbElements);
 
     // on libère la mémoire
     supprimerTable(table);
@@ -205,15 +202,15 @@ void jouerOrdi(Grille_t* grille){
 }
 
 // Fonction qui construit l'arbre des coups possibles
-void construireArbre(noeud_t* racine, bool joueur, int profondeur, table_t* table, listeAux_t* list){    
+void construireArbre(noeud_t* racine, bool joueur, int profondeur, table_t* table, listeAux_t* list, int alpha, int beta){    
     char* cle = creerCle(racine->etatGrille);
 
     if (existe(table, cle)){ // si le noeud existe déjà dans la table de hachage
-        noeud_t* noeud = trouve(table, cle);// *******************
+        noeud_t* noeud = trouve(table, cle);
         racine->valeur = noeud->valeur; // on récupère les données
         racine->nbFils = noeud->nbFils;
         free(racine->fils); // on libère la mémoire allouée avant de remplacer par les fils déjà existants
-        racine->fils = noeud->fils; // ***************************
+        racine->fils = noeud->fils;
         free(cle);
         list->noeuds[list->nbElements++] = racine; // on ajoute le noeud à la liste des noeuds qui ne sont pas dans la table de hachage
     } else {
@@ -231,9 +228,57 @@ void construireArbre(noeud_t* racine, bool joueur, int profondeur, table_t* tabl
                                                                                         // Il y a au maximum TAILLE*TAILLE - profondeur fils car 
                                                                                         // on ne peut pas jouer dans une case déjà occupée
                     racine->fils[racine->nbFils++] = fils; // on ajoute le fils au noeud parent en incrémentant le nombre de fils
-                    construireArbre(fils, !joueur, profondeur + 1, table, list); // on construit le fils
+                    if (racine->max) racine->valeur = -999; // on initialise la valeur du noeud parent
+                    else racine->valeur = 999;
                 }
             }
+
+            // ALGORITHME ALPHA-BETA
+            if(!racine->max){
+                for (int i = 0 ; i < racine->nbFils ; i++){ // on parcourt les fils
+                    construireArbre(racine->fils[i], !joueur, profondeur + 1, table, list, alpha, beta); // on construit chaque fils
+                    if (racine->fils[i]->valeur <= racine->valeur) racine->valeur = racine->fils[i]->valeur; // on fait remonter la valeur min
+                    beta = racine->valeur;
+                    if (beta <= alpha) {
+                        for (int j = i + 1 ; j < racine->nbFils ; j++) {
+                            free(racine->fils[j]->fils);
+                            free(racine->fils[j]); // on libère la mémoire des fils restants
+                        }
+                        break;
+                    }
+                }
+            } else {
+                for (int i = 0 ; i < racine->nbFils ; i++){ // on parcourt les fils
+                    construireArbre(racine->fils[i], !joueur, profondeur + 1, table, list, alpha, beta); // on construit chaque fils
+                    if (racine->fils[i]->valeur >= racine->valeur) racine->valeur = racine->fils[i]->valeur; // on fait remonter la valeur max
+                    alpha = racine->valeur;
+                    if (beta <= alpha) {
+                        for (int j = i + 1 ; j < racine->nbFils ; j++) {
+                            free(racine->fils[j]->fils);
+                            free(racine->fils[j]); // on libère la mémoire des fils restants
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            // ALGORITHME MIN-MAX
+            /* for (int i = 0 ; i < racine->nbFils ; i++) construireArbre(racine->fils[i], !joueur, profondeur + 1, table, list, alpha, beta);
+
+            if (racine->max){
+                int max = -5;
+                for (int i = 0 ; i < racine->nbFils ; i++){
+                    if (racine->fils[i]->valeur > max) max = racine->fils[i]->valeur; // on fait remonter la valeur max
+                }
+                racine->valeur = max;
+            } else {
+                int min = 5;
+                for (int i = 0 ; i < racine->nbFils ; i++){
+                    if (racine->fils[i]->valeur < min) min = racine->fils[i]->valeur; // on fait remonter la valeur min
+                }
+                racine->valeur = min;
+            } */
+
         } else if (victoire == 1){
             racine->valeur = -1;
         } else if (victoire == 2){
@@ -247,28 +292,6 @@ void construireArbre(noeud_t* racine, bool joueur, int profondeur, table_t* tabl
 // Fonction qui teste si un noeud est une feuille
 bool estFeuille(noeud_t* noeud){
     return noeud->nbFils == 0;
-}
-
-// Fonction qui met à jour les valeurs des noeuds
-void evaluerArbre(noeud_t* racine){
-    if (!estFeuille(racine)) {                      // *******************************//
-        for (int i = 0 ; i < racine->nbFils ; i++){ // parcours en largeur de l'arbre //
-            evaluerArbre(racine->fils[i]);          //                                //
-        }                                           // *******************************//
-        if (racine->max){
-            int max = -999;
-            for (int i = 0 ; i < racine->nbFils ; i++){
-                if (racine->fils[i]->valeur > max) max = racine->fils[i]->valeur; // on fait remonter la valeur max
-            }
-            racine->valeur = max;
-        } else {
-            int min = 999;
-            for (int i = 0 ; i < racine->nbFils ; i++){
-                if (racine->fils[i]->valeur < min) min = racine->fils[i]->valeur; // on fait remonter la valeur min
-            }
-            racine->valeur = min;
-        }
-    }
 }
 
 // Fonction qui affiche l'arbre

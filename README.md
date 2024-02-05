@@ -5,7 +5,7 @@
 
 ## Description
 
-Application d'un algorithme de min-max sur un jeu de Morpion. Pas d'interface graphique, celui-ci se fait par ligne de commande. L'algorithme est optimisé grâce à l'utilisation d'une table de hashage pour stocker les coups déjà joués. Cependant, l'algorithme n'est pas assez performant pour les parties de taille 4x4 et plus : le processus s'arrête.
+Application d'un algorithme alpha-beta sur un jeu de Morpion. Pas d'interface graphique, celui-ci se fait par ligne de commande. L'algorithme est optimisé grâce à l'utilisation d'une table de hashage pour stocker les coups déjà joués. L'algorithme est relativement performant pour les tailles allant jusqu'à 4x4. Cependant, pour des tailles supérieures, une erreur ressort disant que la taille d'allocation est trop grande.
 
 ## Utilisation
 
